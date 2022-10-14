@@ -1,0 +1,24 @@
+kubeconfig: |
+  apiVersion: v1
+  clusters:
+  - cluster:
+      certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSU
+      server: https://api.arcaflow.cluster.openshift.com:6443
+    name: arcaflow
+  contexts:
+  - context:
+      cluster: arcaflow
+      user: admin
+    name: admin
+  - context:
+      cluster: arcaflow
+      namespace: arcaflow-plugins
+      user: system:admin/api-arcaflow-cluster-openshift-com:6443
+    name: arcaflow-plugins/api-arcaflow-cluster-openshift-com:6443/system:admin
+  current-context: admin
+  kind: Config
+  preferences: {}
+  users:
+  - name: admin
+    user:
+      token: sha256~2Z70unz91xNLI43k7MnM_mTbIfwe1EVHuxEXDiFWM9c

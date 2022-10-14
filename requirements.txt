@@ -1,1 +1,2 @@
 arcaflow_plugin_sdk
+kubernetes
