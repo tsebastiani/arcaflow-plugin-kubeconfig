@@ -9,7 +9,7 @@ class KubeconfigPluginTest(unittest.TestCase):
     def test_serialization():
         plugin.test_object_serialization(
             kubeconfig_plugin.InputParams(
-                "kubeconfig: apiVersion: v1clusters:   - cluster:   certificate-authority-data:"
+                "kubeconfig: apiVersion: v1clusters:"
             )
         )
 
@@ -18,10 +18,10 @@ class KubeconfigPluginTest(unittest.TestCase):
                 {
                     "cluster_name": "arcaflow",
                     "server_url": "https://api.arcaflow.cluster.openshift.com:6443",
-                    "certificate_authority_data": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSU",
+                    "certificate_authority_data": "LS0tLS1CRUdJTiBDRiCk1JSU",
                     "user": "admin",
-                    "client_certificate_data": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FUUNBVEUtLS0tLQo=",
-                    "client_key_data": "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEF",
+                    "client_certificate_data": "LS0tLS1CRUdJTiBDRVJUSUZJ=",
+                    "client_key_data": "LS0tLS1CRUdJTiBSU0EgUFJJVkpNSUlFcEF",
                 }
             )
         )

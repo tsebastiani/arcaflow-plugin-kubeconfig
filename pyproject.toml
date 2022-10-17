@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "arcaflow-plugin-kubeconfig"
+version = "0.1.0"
+description = ""
+authors = ["Harshith-umesh <harshith.umesh.nat@gmail.com>"]
+license = "Apache-2.0+GPL-2.0-only"
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.9"
+arcaflow-plugin-sdk = "^0.4.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

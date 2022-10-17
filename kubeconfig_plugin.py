@@ -3,18 +3,18 @@
 import sys
 import typing
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
-from arcaflow_plugin_sdk import plugin, validation, schema, annotations
+from arcaflow_plugin_sdk import (
+    plugin,
+    validation
+)
 from kubernetes import config, client
-import subprocess
-import datetime
 import yaml
 
 
 @dataclass
 class InputParams:
     """
-    This is the data structure for the input parameters of the kubeconfig plugin.
+    This is the input data structure for the kubeconfig plugin.
     """
 
     kubeconfig: typing.Annotated[str, validation.min(1)] = field(
@@ -93,7 +93,9 @@ class ErrorOutput:
     exit_code: int = field(
         metadata={
             "name": "Exit Code",
-            "description": "Exit code returned by the program in case of a failure",
+            "description": (
+                "Exit code returned by the program in case of a failure"
+            ),
         }
     )
     error: str = field(
@@ -111,7 +113,10 @@ kubeconfig_output_schema = plugin.build_object_schema(SuccessOutput)
 @plugin.step(
     id="kubeconfig",
     name="kubeconfig plugin",
-    description="Inputs a kubeconfig, parses it and extracts the kubernetes cluster details ",
+    description=(
+        "Inputs a kubeconfig, parses it and extracts the kubernetes cluster"
+        " details "
+    ),
     outputs={"success": SuccessOutput, "error": ErrorOutput},
 )
 def extract_kubeconfig(
@@ -139,7 +144,8 @@ def extract_kubeconfig(
             output["client_key_data"] = kcl._user.value["client-key-data"]
         except Exception as e:
             print(
-                "client certificate and key data missing, trying to extract token"
+                "client certificate and key data missing, trying to extract"
+                " token"
             )
 
         if (
