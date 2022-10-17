@@ -5,10 +5,11 @@ import typing
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from arcaflow_plugin_sdk import plugin, validation, schema, annotations
-from kubernetes import config,client
+from kubernetes import config, client
 import subprocess
 import datetime
 import yaml
+
 
 @dataclass
 class InputParams:
@@ -23,11 +24,13 @@ class InputParams:
         }
     )
 
+
 @dataclass
 class SuccessOutput:
     """
     This is the output data structure for the success case.
     """
+
     cluster_name: str = field(
         metadata={
             "name": "Cluster Name",
@@ -61,7 +64,7 @@ class SuccessOutput:
         metadata={
             "name": "client certificate",
             "description": "base64 encoded client cert data",
-        }
+        },
     )
 
     client_key_data: typing.Optional[str] = field(
@@ -69,15 +72,15 @@ class SuccessOutput:
         metadata={
             "name": "client key",
             "description": "base64 encoded client key",
-        }
+        },
     )
-    
+
     token: typing.Optional[str] = field(
         default=None,
         metadata={
             "name": "Token",
             "description": "Secret token of the user/service account",
-        }
+        },
     )
 
 
@@ -86,22 +89,24 @@ class ErrorOutput:
     """
     This is the output data structure in the error case.
     """
+
     exit_code: int = field(
         metadata={
-            "name": "Exit Code", 
-            "description": "Exit code returned by the program in case of a failure"
+            "name": "Exit Code",
+            "description": "Exit code returned by the program in case of a failure",
         }
     )
     error: str = field(
         metadata={
-            "name": "Failure Error", 
-            "description": "Reason for failure"
+            "name": "Failure Error",
+            "description": "Reason for failure",
         }
     )
-    
+
 
 kubeconfig_input_schema = plugin.build_object_schema(InputParams)
-kubeconfig_output_schema = plugin.build_object_schema(SuccessOutput) 
+kubeconfig_output_schema = plugin.build_object_schema(SuccessOutput)
+
 
 @plugin.step(
     id="kubeconfig",
@@ -109,7 +114,9 @@ kubeconfig_output_schema = plugin.build_object_schema(SuccessOutput)
     description="Inputs a kubeconfig, parses it and extracts the kubernetes cluster details ",
     outputs={"success": SuccessOutput, "error": ErrorOutput},
 )
-def extract_kubeconfig(params: InputParams) -> typing.Tuple[str, typing.Union[SuccessOutput, ErrorOutput]]:
+def extract_kubeconfig(
+    params: InputParams,
+) -> typing.Tuple[str, typing.Union[SuccessOutput, ErrorOutput]]:
 
     print("==>> Parsing and extracting kubernetes cluster details ...")
 
@@ -117,31 +124,46 @@ def extract_kubeconfig(params: InputParams) -> typing.Tuple[str, typing.Union[Su
         kubeconfig = yaml.safe_load(params.kubeconfig)
         kcl = config.kube_config.KubeConfigLoader(kubeconfig)
 
-        output={}
-        output['cluster_name'] = kcl._current_context["context"]["cluster"]
-        output['server_url'] = kcl._cluster.value["server"]
-        output['certificate_authority_data'] = kcl._cluster.value["certificate-authority-data"]
-        output['user'] = kcl._current_context["context"]["user"]
-             
-        try:
-            output['client_certificate_data'] = kcl._user.value["client-certificate-data"]
-            output['client_key_data'] = kcl._user.value["client-key-data"]
-        except:
-            print("client certificate and key data missing, trying to extract token")
+        output = {}
+        output["cluster_name"] = kcl._current_context["context"]["cluster"]
+        output["server_url"] = kcl._cluster.value["server"]
+        output["certificate_authority_data"] = kcl._cluster.value[
+            "certificate-authority-data"
+        ]
+        output["user"] = kcl._current_context["context"]["user"]
 
-        if 'client_key_data' not in output and 'client_certificate_data' not in output:
+        try:
+            output["client_certificate_data"] = kcl._user.value[
+                "client-certificate-data"
+            ]
+            output["client_key_data"] = kcl._user.value["client-key-data"]
+        except Exception as e:
+            print(
+                "client certificate and key data missing, trying to extract token"
+            )
+
+        if (
+            "client_key_data" not in output
+            and "client_certificate_data" not in output
+        ):
             try:
-                output['token'] = kcl._user.value["token"]
-            except:
+                output["token"] = kcl._user.value["token"]
+            except Exception as e:
                 print("token missing for user in kubeconfig")
 
-        if 'client_key_data' not in output and 'client_certificate_data' not in output and 'token' not in output:
-            return "error", ErrorOutput(1, "Both client data and token missing, exiting!")
+        if (
+            "client_key_data" not in output
+            and "client_certificate_data" not in output
+            and "token" not in output
+        ):
+            return "error", ErrorOutput(
+                1, "Both client data and token missing, exiting!"
+            )
 
         print(output)
 
         return "success", kubeconfig_output_schema.unserialize(output)
-    except:
+    except Exception as e:
         return "error", ErrorOutput(1, "Failure in parsing kubeconfig:")
 
 
