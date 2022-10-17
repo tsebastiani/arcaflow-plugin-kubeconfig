@@ -1,6 +1,6 @@
 FROM quay.io/centos/centos:stream8
 
-RUN dnf -y module install python39 && dnf -y install python39 python39-pip
+RUN dnf -y module install python39 && dnf -y install python39 python39-pip git
 RUN mkdir /app
 ADD https://raw.githubusercontent.com/arcalot/arcaflow-plugins/main/LICENSE /app
 ADD kubeconfig_plugin.py /app

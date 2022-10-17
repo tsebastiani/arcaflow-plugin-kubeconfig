@@ -1,0 +1,10 @@
+---
+version: '3.2'
+services:
+  plugin:
+    image: ghcr.io/arcalot/arcaflow-plugin-kubeconfig
+    build: .
+    volumes:
+      - source: ./kubeconfig_example.yaml
+        target: /config/kubeconfig_example.yaml
+        type: bind

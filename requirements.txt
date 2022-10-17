@@ -1,2 +1,2 @@
-arcaflow_plugin_sdk
+git+https://github.com/arcalot/arcaflow-plugin-sdk-python.git@main
 kubernetes
