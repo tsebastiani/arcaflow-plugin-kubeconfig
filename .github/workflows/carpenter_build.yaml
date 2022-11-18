@@ -2,7 +2,7 @@ name: Carpentry
 on:
   pull_request:
 env:
-  IMAGE_NAME: arcaflow-plugin-template-python
+  IMAGE_NAME: arcaflow-plugin-kubeconfig
   IMAGE_TAG: 'latest'
   QUAY_IMG_EXP: 'never'
   GITHUB_USERNAME: ${{ github.actor }}
