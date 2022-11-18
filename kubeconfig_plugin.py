@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-
+import base64
 import sys
+import traceback
 import typing
 from dataclasses import dataclass, field
-from arcaflow_plugin_sdk import plugin, validation
-from kubernetes import config
+
 import yaml
+from arcaflow_plugin_sdk import plugin, schema, validation
 
 
 @dataclass
@@ -23,62 +24,69 @@ class InputParams:
 
 
 @dataclass
+class Connection:
+    """
+    This is a connection specification matching the Go connection structure.
+    """
+
+    host: typing.Annotated[
+        str,
+        schema.name("Server"),
+        schema.description("Kubernetes API URL"),
+    ]
+    path: typing.Annotated[
+        typing.Optional[str],
+        schema.name("API path"),
+        schema.description("Kubernetes API path"),
+    ] = None
+    username: typing.Annotated[
+        typing.Optional[str],
+        schema.name("Username"),
+        schema.description("Username to authenticate with."),
+    ] = None
+    password: typing.Annotated[
+        typing.Optional[str],
+        schema.name("Password"),
+        schema.description("Password to authenticate with."),
+    ] = None
+    serverName: typing.Annotated[
+        typing.Optional[str],
+        schema.name("TLS server name"),
+        schema.description("Server name to verify TLS certificate against."),
+    ] = None
+    cert: typing.Annotated[
+        typing.Optional[str],
+        schema.name("Client certificate"),
+        schema.description("Client cert data in PEM format"),
+    ] = None
+    key: typing.Annotated[
+        typing.Optional[str],
+        schema.name("Client key"),
+        schema.description("Client key in PEM format"),
+    ] = None
+    cacert: typing.Annotated[
+        typing.Optional[str],
+        schema.name("CA certificate"),
+        schema.description("CA certificate in PEM format"),
+    ] = None
+    bearerToken: typing.Annotated[
+        typing.Optional[str],
+        schema.name("Token"),
+        schema.description("Secret token of the user/service account"),
+    ] = None
+
+
+@dataclass
 class SuccessOutput:
     """
     This is the output data structure for the success case.
     """
 
-    cluster_name: str = field(
-        metadata={
-            "name": "Cluster Name",
-            "description": "Name of cluster",
-        }
-    )
-
-    server_url: str = field(
-        metadata={
-            "name": "Server",
-            "description": "Kubernetes server endpoint url",
-        }
-    )
-
-    certificate_authority_data: str = field(
-        metadata={
-            "name": "certificate authority data",
-            "description": "Cluster certificate authority",
-        }
-    )
-
-    user: str = field(
-        metadata={
-            "name": "User",
-            "description": "name of the user/service account.",
-        }
-    )
-
-    client_certificate_data: typing.Optional[str] = field(
-        default=None,
-        metadata={
-            "name": "client certificate",
-            "description": "base64 encoded client cert data",
-        },
-    )
-
-    client_key_data: typing.Optional[str] = field(
-        default=None,
-        metadata={
-            "name": "client key",
-            "description": "base64 encoded client key",
-        },
-    )
-
-    token: typing.Optional[str] = field(
-        default=None,
-        metadata={
-            "name": "Token",
-            "description": "Secret token of the user/service account",
-        },
-    )
+    connection: typing.Annotated[
+        Connection,
+        schema.name("Kubernetes connection"),
+        schema.description("Kubernetes connection confirmation."),
+    ]
 
 
 @dataclass
@@ -87,14 +95,6 @@ class ErrorOutput:
     This is the output data structure in the error case.
     """
 
-    exit_code: int = field(
-        metadata={
-            "name": "Exit Code",
-            "description": (
-                "Exit code returned by the program in case of a failure"
-            ),
-        }
-    )
     error: str = field(
         metadata={
             "name": "Failure Error",
@@ -111,63 +111,155 @@ kubeconfig_output_schema = plugin.build_object_schema(SuccessOutput)
     id="kubeconfig",
     name="kubeconfig plugin",
     description=(
-        "Inputs a kubeconfig, parses it and extracts the kubernetes cluster"
-        " details "
+        "Inputs a kubeconfig, parses it and extracts the kubernetes cluster details"
     ),
     outputs={"success": SuccessOutput, "error": ErrorOutput},
 )
 def extract_kubeconfig(
     params: InputParams,
 ) -> typing.Tuple[str, typing.Union[SuccessOutput, ErrorOutput]]:
-
     print("==>> Parsing and extracting kubernetes cluster details ...")
 
     try:
-        kubeconfig = yaml.safe_load(params.kubeconfig)
-        kcl = config.kube_config.KubeConfigLoader(kubeconfig)
+        try:
+            kubeconfig = yaml.safe_load(params.kubeconfig)
+        except Exception as e:
+            return "error", ErrorOutput(
+                "Exception occurred while loading YAML. Input is not valid YAML."
+                f" Exception: {e}"
+            )
 
-        output = {}
-        output["cluster_name"] = kcl._current_context["context"]["cluster"]
-        output["server_url"] = kcl._cluster.value["server"]
-        output["certificate_authority_data"] = kcl._cluster.value[
-            "certificate-authority-data"
-        ]
-        output["user"] = kcl._current_context["context"]["user"]
+        # Kubeconfig files have the kind set as Config
+        try:
+            kind = kubeconfig["kind"]
+        except KeyError:
+            return "error", ErrorOutput(
+                "The provided file is not a kubeconfig file (missing 'kind' field)"
+            )
+        if kind != "Config":
+            return "error", ErrorOutput("The provided file is not a kubeconfig file")
+
+        # Get the current context, then search for the values for that context in the
+        # context section
+        current_context = kubeconfig.get("current-context", None)
+        if current_context is None:
+            return "error", ErrorOutput(
+                "The provided kubeconfig file does not have a current-context set."
+                " Please set a current context to use."
+            )
 
         try:
-            output["client_certificate_data"] = kcl._user.value[
-                "client-certificate-data"
-            ]
-            output["client_key_data"] = kcl._user.value["client-key-data"]
-        except Exception:
-            print(
-                "client certificate and key data missing, trying to extract"
-                " token"
-            )
+            contexts = kubeconfig["contexts"]
+        except KeyError:
+            return "error", ErrorOutput("'contexts' field missing from kubeconfig.")
 
-        if (
-            "client_key_data" not in output
-            and "client_certificate_data" not in output
-        ):
+        context = None
+        for ctx in contexts:
             try:
-                output["token"] = kcl._user.value["token"]
-            except Exception:
-                print("token missing for user in kubeconfig")
-
-        if (
-            "client_key_data" not in output
-            and "client_certificate_data" not in output
-            and "token" not in output
-        ):
+                if ctx["name"] == current_context:
+                    context = ctx["context"]
+            except KeyError as e:
+                return "error", ErrorOutput(
+                    f"{e} section missing from context entry in kubeconfig"
+                )
+        if context is None:
             return "error", ErrorOutput(
-                1, "Both client data and token missing, exiting!"
+                f"Failed to find a context named {current_context} in the kubeconfig"
+                " file."
             )
 
-        print(output)
+        try:
+            current_cluster = context["cluster"]
+            current_user = context["user"]
+        except KeyError as e:
+            return "error", ErrorOutput(
+                f"{e} field missing from kubeconfig current context"
+            )
 
-        return "success", kubeconfig_output_schema.unserialize(output)
-    except Exception:
-        return "error", ErrorOutput(1, "Failure in parsing kubeconfig:")
+        # Now find the cluster for that current context
+        try:
+            clusters = kubeconfig["clusters"]
+        except KeyError:
+            return "error", ErrorOutput("Clusters section missing from kubeconfig file")
+
+        cluster = None
+        for cl in clusters:
+            try:
+                if cl["name"] == current_cluster:
+                    try:
+                        cluster = cl["cluster"]
+                    except KeyError:
+                        return "error", ErrorOutput(
+                            "cluster section missing from section of current cluster"
+                            f" {current_cluster}"
+                        )
+            except KeyError as e:
+                return "error", ErrorOutput(
+                    f"{e} section missing from clusters entry in kubeconfig"
+                )
+        if cluster is None:
+            return "error", ErrorOutput(
+                f"Failed to find a cluster named {current_cluster} in the kubeconfig"
+                " file."
+            )
+
+        # Now find the user for current context's user for authentication.
+        try:
+            users = kubeconfig["users"]
+        except KeyError:
+            return "error", ErrorOutput("'users' section not found in kubeconfig")
+
+        user = None
+        for u in users:
+            try:
+                if u["name"] == current_user:
+                    user = u["user"]
+            except KeyError as e:
+                return "error", ErrorOutput(
+                    f"{e} section in the users section not found in the kubeconfig"
+                )
+        if user is None:
+            return "error", ErrorOutput(
+                f"Failed to find a user named {current_user} in the kubeconfig file."
+            )
+
+        # Ensure the server is in the kubeconfig
+        try:
+            server = cluster["server"]
+        except KeyError:
+            return "error", ErrorOutput(
+                f"Failed to find server in cluster kubeconfig file {current_cluster}"
+                " cluster section"
+            )
+        # Populate output values from the user and server sections.
+        output = SuccessOutput(
+            Connection(host=server),
+        )
+        output.connection.cacert = base64_decode(
+            cluster.get("certificate-authority-data", None)
+        )
+        output.connection.cert = base64_decode(
+            user.get("client-certificate-data", None)
+        )
+        output.connection.key = base64_decode(user.get("client-key-data", None))
+        output.connection.username = user.get("username", None)
+        output.connection.password = user.get("password", None)
+        output.connection.bearerToken = user.get("token", None)
+
+        return "success", output
+    except Exception as e:
+        # This is the catch-all case.
+        # The goal is for all other errors to be addressed individually.
+        return "error", ErrorOutput(
+            f"Failure to parse kubeconfig. Exception: {e}. Traceback: "
+            + traceback.format_exc()
+        )
+
+
+def base64_decode(encoded):
+    if encoded is None:
+        return None
+    return base64.b64decode(encoded).decode("ascii")
 
 
 if __name__ == "__main__":
