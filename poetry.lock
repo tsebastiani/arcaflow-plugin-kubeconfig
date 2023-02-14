@@ -2,23 +2,19 @@
 
 [[package]]
 name = "arcaflow-plugin-sdk"
-version = "0.0.0"
+version = "0.10.1"
 description = "Plugin SDK for Python for the Arcaflow workflow engine"
 category = "main"
 optional = false
-python-versions = "^3.9"
-files = []
-develop = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "arcaflow_plugin_sdk-0.10.1-py3-none-any.whl", hash = "sha256:ca55af6ab916ee1f7dfd9be7b332480161dac282db50fae0c713d33641a3b942"},
+    {file = "arcaflow_plugin_sdk-0.10.1.tar.gz", hash = "sha256:342af5fbb2647a570c8f459d97f10522393fe712a5f227d1003e72752d61e362"},
+]
 
 [package.dependencies]
-cbor2 = "^5.4.3"
-PyYAML = "^5.4"
-
-[package.source]
-type = "git"
-url = "https://github.com/arcalot/arcaflow-plugin-sdk-python.git"
-reference = "atp-comms-fix"
-resolved_reference = "2df485dcefda97e9c2657013a2fd2a4eb7cc864a"
+cbor2 = ">=5.4.3,<6.0.0"
+PyYAML = ">=5.4,<6.0"
 
 [[package]]
 name = "cachetools"
@@ -412,14 +408,14 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "setuptools"
-version = "67.1.0"
+version = "67.3.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "setuptools-67.1.0-py3-none-any.whl", hash = "sha256:a7687c12b444eaac951ea87a9627c4f904ac757e7abdc5aac32833234af90378"},
-    {file = "setuptools-67.1.0.tar.gz", hash = "sha256:e261cdf010c11a41cb5cb5f1bf3338a7433832029f559a6a7614bd42a967c300"},
+    {file = "setuptools-67.3.1-py3-none-any.whl", hash = "sha256:23c86b4e44432bfd8899384afc08872ec166a24f48a3f99f293b0a557e6a6b5d"},
+    {file = "setuptools-67.3.1.tar.gz", hash = "sha256:daec07fd848d80676694d6bf69c009d28910aeece68a38dbe88b7e1bb6dba12e"},
 ]
 
 [package.extras]
@@ -458,14 +454,14 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "websocket-client"
-version = "1.5.0"
+version = "1.5.1"
 description = "WebSocket client for Python with low level API options"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "websocket-client-1.5.0.tar.gz", hash = "sha256:561ca949e5bbb5d33409a37235db55c279235c78ee407802f1d2314fff8a8536"},
-    {file = "websocket_client-1.5.0-py3-none-any.whl", hash = "sha256:fb5d81b95d350f3a54838ebcb4c68a5353bbd1412ae8f068b1e5280faeb13074"},
+    {file = "websocket-client-1.5.1.tar.gz", hash = "sha256:3f09e6d8230892547132177f575a4e3e73cfdf06526e20cc02aa1c3b47184d40"},
+    {file = "websocket_client-1.5.1-py3-none-any.whl", hash = "sha256:cdf5877568b7e83aa7cf2244ab56a3213de587bbe0ce9d8b9600fc77b455d89e"},
 ]
 
 [package.extras]
@@ -476,4 +472,4 @@ test = ["websockets"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "863a0223bac4b0e167b97b002248d600253166141d002353b491a3a95c4221fd"
+content-hash = "98b51470998c0c395c76f2912cabb0a691ad2aaf17fabeafd454cecad432fe48"
